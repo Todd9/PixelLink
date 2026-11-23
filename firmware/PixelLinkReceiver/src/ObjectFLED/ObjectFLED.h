@@ -87,11 +87,15 @@
 #define CORDER_BGWR	29
 
 
+// PixelLink patch: numLEDs, stripLen and the genFrameBuffer() loop counters are
+// 32-bit (upstream uses 16-bit, which caps one driver at 21,845 RGB LEDs and
+// hangs show() past it). Each strip is still limited to 4,095 bytes (1,365 RGB
+// LEDs) because the eDMA major loop count (CITER/BITER) is 15 bits.
 //Usage: ObjectFLED myCube ( Num_LEDs, *drawBuffer, LED_type, numPins, *pinList, serpentineNumber )
 class ObjectFLED {
 public:
 	//Usage: ObjectFLED myCube ( Num_LEDs, *drawBuffer, LED_type, numPins, *pinList, serpentineNumber )
-	ObjectFLED(uint16_t numLEDs, void* drawBuf, uint8_t config, uint8_t numPins, const uint8_t* pinList, \
+	ObjectFLED(uint32_t numLEDs, void* drawBuf, uint8_t config, uint8_t numPins, const uint8_t* pinList, \
 				uint8_t serpentine = 0);
 
 	~ObjectFLED() { 
@@ -149,7 +153,7 @@ private:
 	uint32_t gLevel = 65025;
 	uint32_t bLevel = 65025;
 	void* drawBuffer;
-	uint16_t stripLen;
+	uint32_t stripLen;
 	uint8_t params;
 	uint8_t pinlist[NUM_DIGITAL_PINS];
 	uint16_t comp1load[3];

@@ -12,9 +12,9 @@ static uint32_t fakeMs = 0;
 uint32_t millis(){ return fakeMs; } uint32_t micros(){ return fakeMs*1000; }
 void pinMode(uint8_t,uint8_t){} void digitalWriteFast(uint8_t,uint8_t){} float tempmonGetTemp(){return 42.5f;}
 SerialT Serial;
-struct Show { uint16_t leds; uint8_t pins; std::vector<uint8_t> data; };
-std::vector<Show> shows; static uint16_t gLeds; static uint8_t gPins; static void* gBuf; int liveDrivers=0; int builds=0;
-ObjectFLED::ObjectFLED(uint16_t n, void* b, uint8_t, uint8_t np, const uint8_t*, uint8_t){ gLeds=n; gPins=np; gBuf=b; liveDrivers++; builds++; assert(liveDrivers==1);}
+struct Show { uint32_t leds; uint8_t pins; std::vector<uint8_t> data; };
+std::vector<Show> shows; static uint32_t gLeds; static uint8_t gPins; static void* gBuf; int liveDrivers=0; int builds=0;
+ObjectFLED::ObjectFLED(uint32_t n, void* b, uint8_t, uint8_t np, const uint8_t*, uint8_t){ gLeds=n; gPins=np; gBuf=b; liveDrivers++; builds++; assert(liveDrivers==1);}
 ObjectFLED::~ObjectFLED(){ liveDrivers--; }
 void ObjectFLED::begin(uint16_t){}
 void ObjectFLED::show(){ Show s{gLeds,gPins,std::vector<uint8_t>((uint8_t*)gBuf,(uint8_t*)gBuf+gLeds*3)}; shows.push_back(s);}
@@ -63,10 +63,10 @@ int main(){
   // keep sending small frames for >4 s -> shrink to 4 ch x 50
   for(int i=0;i<250;i++){ sendFrame(4,50,33); run(20);} 
   CHECK(shows.back().pins==4 && shows.back().leds==4*50 && shows.back().data[0]==33);
-  // LED limit: 32 ch x 972 -> clamp to 682
+  // full size: 32 ch x 972 = 31104 LEDs, past upstream ObjectFLED's 21845 cap
   sendFrame(32, 972, 5); run(1);
-  CHECK(shows.back().pins==32 && shows.back().leds==32*682);
-  CHECK(limitClamps>0);
+  CHECK(shows.back().pins==32 && shows.back().leds==32*972);
+  CHECK(shows.back().data[0]==5 && shows.back().data[32*972*3-1]==5);
   // late packet from old frame ignored
   { std::vector<uint8_t> b(12+3); uint8_t px[3]={1,2,3}; pl::buildPixels(b.data(), F-3, 0, pl::kFlagPush, 0, 1, px); size_t n=shows.size(); rxq.push_back(b); run(1); CHECK(shows.size()==n);}  
   // sender restart (frame jumps far back) accepted

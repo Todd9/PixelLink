@@ -86,7 +86,7 @@ DMAChannel ObjectFLED::dma3;
 volatile bool dma_first;
 
 
-ObjectFLED::ObjectFLED(uint16_t numLEDs, void *drawBuf, uint8_t config, uint8_t numPins, \
+ObjectFLED::ObjectFLED(uint32_t numLEDs, void *drawBuf, uint8_t config, uint8_t numPins, \
 					const uint8_t *pinList, uint8_t serpentine) {
 	serpNumber = serpentine;
 	drawBuffer = drawBuf;
@@ -294,7 +294,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 	if (serp == 0) {	// use faster loops if no serp
 		switch (params & 0x3F) {
 		case CORDER_RGBW:		// R,G,B = R,G,B - MIN(R,G,B); W = MIN(R,G,B)
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 4) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 4) {
 				uint8_t minRGB = MIN(*((uint8_t*)drawBuffer + j) * rLevel / 65025, \
 					*((uint8_t*)drawBuffer + j + 1) * rLevel / 65025);
 				minRGB = MIN(minRGB, *((uint8_t*)drawBuffer + j + 2) * rLevel / 65025);
@@ -306,7 +306,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_GBR:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				*(frameBuffer + i + 2) = *((uint8_t*)drawBuffer + j) * rLevel / 65025;
 				*(frameBuffer + i) = *((uint8_t*)drawBuffer + j + 1) * gLevel / 65025;
 				*(frameBuffer + i + 1) = *((uint8_t*)drawBuffer + j + 2) * bLevel / 65025;
@@ -314,7 +314,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_BGR:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				*(frameBuffer + i + 2) = *((uint8_t*)drawBuffer + j) * rLevel / 65025;
 				*(frameBuffer + i + 1) = *((uint8_t*)drawBuffer + j + 1) * gLevel / 65025;
 				*(frameBuffer + i) = *((uint8_t*)drawBuffer + j + 2) * bLevel / 65025;
@@ -322,7 +322,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_BRG:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				*(frameBuffer + i + 1) = *((uint8_t*)drawBuffer + j) * rLevel / 65025;
 				*(frameBuffer + i + 2) = *((uint8_t*)drawBuffer + j + 1) * gLevel / 65025;
 				*(frameBuffer + i) = *((uint8_t*)drawBuffer + j + 2) * bLevel / 65025;
@@ -330,7 +330,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_GRB:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				*(frameBuffer + i + 1) = *((uint8_t*)drawBuffer + j) * rLevel / 65025;
 				*(frameBuffer + i) = *((uint8_t*)drawBuffer + j + 1) * gLevel / 65025;
 				*(frameBuffer + i + 2) = *((uint8_t*)drawBuffer + j + 2) * bLevel / 65025;
@@ -339,7 +339,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			break;
 		case CORDER_RGB:
 		default:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				*(frameBuffer + i) = *((uint8_t*)drawBuffer + j) * rLevel / 65025;
 				*(frameBuffer + i + 1) = *((uint8_t*)drawBuffer + j + 1) * gLevel / 65025;
 				*(frameBuffer + i + 2) = *((uint8_t*)drawBuffer + j + 2) * bLevel / 65025;
@@ -349,7 +349,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 	} else {	//serpentine
 		switch (params & 0x3F) {
 		case CORDER_RGBW:		// R,G,B = R,G,B - MIN(R,G,B); W = MIN(R,G,B)
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 4) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 4) {
 				uint8_t minRGB = MIN(*((uint8_t*)drawBuffer + j) * rLevel / 65025, \
 					* ((uint8_t*)drawBuffer + j + 1) * rLevel / 65025);
 				minRGB = MIN(minRGB, *((uint8_t*)drawBuffer + j + 2) * rLevel / 65025);
@@ -365,7 +365,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_GBR:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				if (i % (serp * 3) == 0) {
 					if (jChange < 0) { j = i; jChange = 3; }
 					else { j = i + (serp - 1) * 3; jChange = -3; }
@@ -377,7 +377,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_BGR:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				if (i % (serp * 3) == 0) {
 					if (jChange < 0) { j = i; jChange = 3; }
 					else { j = i + (serp - 1) * 3; jChange = -3; }
@@ -389,7 +389,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_BRG:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				if (i % (serp * 3) == 0) {
 					if (jChange < 0) { j = i; jChange = 3; }
 					else { j = i + (serp - 1) * 3; jChange = -3; }
@@ -401,7 +401,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			}	//for(leds in drawbuffer)
 			break;
 		case CORDER_GRB:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				if (i % (serp * 3) == 0) {
 					if (jChange < 0) { j = i; jChange = 3; }
 					else { j = i + (serp - 1) * 3; jChange = -3; }
@@ -414,7 +414,7 @@ void ObjectFLED::genFrameBuffer(uint32_t serp) {
 			break;
 		case CORDER_RGB:
 		default:
-			for (uint16_t i = 0; i < (numbytes * numpins); i += 3) {
+			for (uint32_t i = 0; i < (numbytes * numpins); i += 3) {
 				if (i % (serp * 3) == 0) {
 					if (jChange < 0) { j = i; jChange = 3; }
 					else { j = i + (serp - 1) * 3; jChange = -3; }
