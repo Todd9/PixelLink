@@ -33,7 +33,7 @@ With no data within 5 s of boot, the receiver runs its test pattern, which is a 
 | --- | --- |
 | Protocol | 1 |
 | Library | 1.0.0 |
-| Receiver firmware | 1.1.4 |
+| Receiver firmware | 1.1.5 |
 
 ## Roadmap
 

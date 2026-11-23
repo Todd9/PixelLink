@@ -6,7 +6,7 @@
 //
 // Libraries:
 //   QNEthernet   (Library Manager)
-//   ObjectFLED   (github.com/KurtMF/ObjectFLED)
+//   ObjectFLED   patched copy in src/ObjectFLED (see its README.md)
 //   Watchdog_t4  (bundled with Teensyduino)
 //   FlasherX     copy FlashTxx.c and FlashTxx.h from
 //                github.com/joepasquariello/FlasherX into this sketch folder
@@ -27,7 +27,11 @@
 //   - Pixel values are never changed except by the fade and the test pattern.
 
 #include <QNEthernet.h>
-#include <ObjectFLED.h>
+#if defined(__IMXRT1062__)
+#include "src/ObjectFLED/ObjectFLED.h"  // patched: 32-bit LED count
+#else
+#include <ObjectFLED.h>                 // host tests: tests/host/stubs
+#endif
 #include <Watchdog_t4.h>
 #include "PixelLink.h"
 #include "PixelLinkOta.h"
@@ -71,7 +75,7 @@ const uint8_t PIN_LIST[] = {
 #define TEST_NEVER              2
 #define TEST_MODE               TEST_IF_NO_SIGNAL
 #define TEST_BRIGHTNESS         64           // 0-255 (64 = 25%), limits power draw
-#define TEST_PIXELS_PER_CHANNEL 486          // max 682 with 32 channels
+#define TEST_PIXELS_PER_CHANNEL 486          // up to MAX_PIXELS_PER_CHANNEL
 
 // Debug: STATUS packets to the sender once a second, plus serial logging
 #define DEBUG                   0
@@ -79,7 +83,7 @@ const uint8_t PIN_LIST[] = {
 // ========================================================================
 
 // Fixed constants
-const uint8_t  FW_VERSION[3]           = {1, 1, 4};
+const uint8_t  FW_VERSION[3]           = {1, 1, 5};
 const uint32_t SHRINK_DELAY_MS         = 2000;  // output shrinks after this long
 const uint32_t NO_SIGNAL_TEST_DELAY_MS = 5000;  // IF_NO_SIGNAL waits this long
 // Resend the current frame this often when nothing new arrives (test pattern,
@@ -96,19 +100,20 @@ const int      MAX_PACKETS_PER_LOOP    = 64;
 const size_t   UDP_QUEUE_SIZE          = 64;    // packets buffered between loop passes
 const int      WATCHDOG_TIMEOUT_S      = 4;
 
-// ObjectFLED indexes its frame buffer with a 16-bit counter, so one driver
-// can handle at most 65535 bytes: 21845 RGB LEDs across all driven channels.
-const uint32_t MAX_DRIVER_LEDS = 21845;
-
 const uint8_t  NUM_CHANNELS = sizeof(PIN_LIST);
+
+// Largest ObjectFLED frame: every channel at full length. The vendored
+// ObjectFLED counts LEDs in 32 bits, so there is no total cap below this.
+const uint32_t MAX_DRIVER_LEDS = uint32_t(NUM_CHANNELS) * MAX_PIXELS_PER_CHANNEL;
 const uint32_t ALL_CHANNELS = (NUM_CHANNELS == 32) ? 0xFFFFFFFFu : ((1u << NUM_CHANNELS) - 1);
 
 static_assert(NUM_CHANNELS <= 32, "PIN_LIST supports at most 32 channels");
 static_assert(sizeof(NODE_NAME) - 1 <= 15, "NODE_NAME is limited to 15 characters");
 static_assert(TEST_PIXELS_PER_CHANNEL <= MAX_PIXELS_PER_CHANNEL,
               "TEST_PIXELS_PER_CHANNEL must not exceed MAX_PIXELS_PER_CHANNEL");
-static_assert(uint32_t(TEST_PIXELS_PER_CHANNEL) * NUM_CHANNELS <= MAX_DRIVER_LEDS,
-              "TEST_PIXELS_PER_CHANNEL x channels exceeds the ObjectFLED limit");
+// ObjectFLED's per-strip DMA loop count is 15 bits: 4095 bytes, 1365 RGB LEDs.
+static_assert(MAX_PIXELS_PER_CHANNEL <= 1365,
+              "MAX_PIXELS_PER_CHANNEL exceeds ObjectFLED's per-strip limit (1365)");
 
 #if DEBUG
 #define DBG(...) Serial.printf(__VA_ARGS__)
@@ -187,7 +192,6 @@ static uint32_t framesShown     = 0;
 static uint32_t implicitFrames  = 0;
 static uint32_t badPackets      = 0;
 static uint32_t packetsReceived = 0;
-static uint32_t limitClamps     = 0;
 static uint32_t fpsCount        = 0;
 static uint32_t chanSeenMask    = 0;    // channels with data since last STATUS
 static uint32_t lastStatusMs    = 0;
@@ -209,7 +213,7 @@ static void rebuildDriver(uint32_t mask, uint16_t len) {
 
   // Must be constructed after the old driver is deleted: ObjectFLED keeps its
   // frame buffer pointer in a static that the destructor frees.
-  driver = new ObjectFLED(uint16_t(uint32_t(len) * n), stageBuf, COLOR_ORDER, n, pins);
+  driver = new ObjectFLED(uint32_t(len) * n, stageBuf, COLOR_ORDER, n, pins);
   driver->begin(static_cast<uint16_t>(LED_LATCH_US));
   DBG("Output: %u channels x %u pixels\n", n, len);
 }
@@ -291,14 +295,6 @@ static void updateGeometry() {
     winMask = 0;
     winLen = 0;
     winStart = now;
-  }
-
-  // Keep within ObjectFLED's limit by shortening the output.
-  const uint32_t n = __builtin_popcount(geoMask);
-  if (n && uint32_t(geoLen) * n > MAX_DRIVER_LEDS) {
-    geoLen = uint16_t(MAX_DRIVER_LEDS / n);
-    limitClamps++;
-    DBG("LED limit: output clamped to %u pixels\n", geoLen);
   }
 }
 
@@ -562,10 +558,10 @@ static void sendStatus(uint32_t now) {
     udp.send(senderIP, senderPort, buf, pl::buildStatus(buf, s));
   }
 
-  DBG("fps %u.%u  out %u ch x %u px  active %u  state %u  temp %d.%d C  bad %lu  implicit %lu  clamps %lu\n",
+  DBG("fps %u.%u  out %u ch x %u px  active %u  state %u  temp %d.%d C  bad %lu  implicit %lu\n",
       s.fpsX10 / 10, s.fpsX10 % 10, __builtin_popcount(drvMask), drvLen, s.activeChannels,
       s.state, s.tempX10 / 10, abs(s.tempX10 % 10), (unsigned long)badPackets,
-      (unsigned long)implicitFrames, (unsigned long)limitClamps);
+      (unsigned long)implicitFrames);
 
   fpsCount = 0;
   chanSeenMask = 0;

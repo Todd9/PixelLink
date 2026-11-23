@@ -115,7 +115,7 @@ This describes the reference receiver, `firmware/PixelLinkReceiver`. It sizes it
 - Output length L is the longest channel length seen in a frame. All pins clock out L pixels in parallel, so refresh time is about 30 µs × L plus the latch: roughly 68 fps at 486 pixels and 34 fps at 972.
 - **Grow:** if a frame needs more than L, L grows before that frame is shown, so nothing is cut off.
 - **Shrink:** L shrinks only after 2 seconds (fixed) of frames that all fit in a smaller length, so one odd frame causes no churn.
-- Driven channels × L must stay at or under 21,845 LEDs (ObjectFLED indexes with a 16-bit counter). Over that, L is clamped: 682 px with 32 channels, the full 972 px up to 22 channels. Changing L rebuilds the ObjectFLED driver. This happens only when geometry changes, never per frame.
+- All 32 channels can run at the full 972 px. The receiver uses a patched ObjectFLED with a 32-bit LED count (upstream caps one driver at 21,845 LEDs). Changing L rebuilds the ObjectFLED driver. This happens only when geometry changes, never per frame.
 - Strings shorter than L are fine: their extra data runs past the last LED. Pixels beyond a channel's new length after a shrink stop updating and keep their last color.
 - Only channels that receive data are driven. The driven set grows at once and drops channels after the same 2 s; a dropped channel keeps its last colors. Channels never addressed are not driven at all.
 
