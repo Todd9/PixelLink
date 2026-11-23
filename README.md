@@ -41,9 +41,11 @@ With no data within 5 s of boot, the receiver runs its test pattern, which is a 
 - Backward compatibility with sACN (E1.31), possibly as a separate receiver firmware.
 - Hardware design files for the receiver board, and improvements to it.
 
-## Origin
+## Notes
 
-Pixel Link was developed for an LED sculpture installation, where the receiver and the FastLED extension run today. The sculpture-specific code stays in that project; this repo holds the generic parts.
+Pixel limit per pin is 972, two packets' worth of pixels, a design choice rather than a hardware limit. Each packet carries 486 pixels, the most that fits in one unfragmented UDP packet on standard Ethernet. The receiver allows two packets per channel.
+
+It could go up to ObjectFLED's ceiling of 1,365 pixels, but at a cost. Frame rate would drop from about 34 to 24 fps at full length. RAM use would be tight, and the receive queue would need enlarging.
 
 ## License
 
