@@ -1,0 +1,7 @@
+*.o
+*.zip
+*.bin
+*.hex
+build/
+__pycache__/
+.DS_Store

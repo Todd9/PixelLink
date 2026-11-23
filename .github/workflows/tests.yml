@@ -1,0 +1,21 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: C++ host tests
+        run: make -C tests/host test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python previz tests
+        run: |
+          pip install numpy
+          python -m unittest discover tests/touchdesigner
